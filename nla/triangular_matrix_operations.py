@@ -1,4 +1,4 @@
-"""Triangular and bidiagonal solvers (Session 2)."""
+"""Triangular and bidiagonal solvers"""
 
 import numpy as np
 

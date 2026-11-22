@@ -1,46 +1,24 @@
-"""Linear-time methods for tridiagonal matrices (Session 3).
-
-These power the cubic spline interpolation of interest rate curves:
-the spline's linear system is tridiagonal, so it can be solved in O(n)
-instead of O(n^3).
-"""
+"""Linear-time methods for tridiagonal matrices leveraging bidiagonal algos."""
 
 import numpy as np
 
-from nla.triangular import forward_substitution_bidiagonal, backward_substitution_bidiagonal
+from nla.triangular_matrix_operations import forward_substitution_bidiagonal, backward_substitution_bidiagonal
 
 
 def lu_tridiagonal(A):
-    """LU decomposition without pivoting for a tridiagonal matrix: A = L U.
-
-    L is unit lower bidiagonal and U is upper bidiagonal, and the
-    super-diagonal of U equals the super-diagonal of A. Each step touches
-    only a constant number of entries, so the total cost is O(n).
-
-    Parameters
-    ----------
-    A : (n, n) ndarray, tridiagonal, with an LU decomposition
-        (e.g. strictly diagonally dominant)
-
-    Returns
-    -------
-    L : (n, n) ndarray, unit lower bidiagonal
-    U : (n, n) ndarray, upper bidiagonal
-    """
-    raise NotImplementedError("TODO: LU decomposition for tridiagonal matrices (Session 3)")
+    n = A.shape[0]
+    L = np.eye(n)
+    U = np.zeros((n, n))
+    U[0, 0] = A[0, 0]
+    for k in range(0, n-1):
+        U[k, k+1] = A[k, k+1]  # super-diagonal of U is copied from A
+        L[k+1, k] = A[k+1, k] / U[k, k]
+        U[k+1, k+1] = A[k+1, k+1] - L[k+1, k] * U[k, k+1]
+    return L, U
 
 
 def solve_tridiagonal(A, b):
-    """Solve A x = b for tridiagonal A in O(n):
-    lu_tridiagonal, then bidiagonal forward and backward substitution.
-
-    Parameters
-    ----------
-    A : (n, n) ndarray, tridiagonal
-    b : (n,) ndarray
-
-    Returns
-    -------
-    x : (n,) ndarray
-    """
-    raise NotImplementedError("TODO: tridiagonal linear solver (Session 3)")
+    L, U = lu_tridiagonal(A)
+    y = forward_substitution_bidiagonal(L, b)   # L y = b
+    x = backward_substitution_bidiagonal(U, y)  # U x = y
+    return x
