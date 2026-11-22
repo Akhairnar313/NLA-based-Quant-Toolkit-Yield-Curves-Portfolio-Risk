@@ -8,9 +8,11 @@ against NumPy/SciPy reference implementations.
 
 Modules
 -------
-triangular   Forward / backward substitution (Session 2)
-basic_operations  Non-singularity check (more basic operations to come)
-lu           LU decomposition with and without pivoting (Sessions 2-3)
+triangular_matrix_operations  Forward / backward substitution, bidiagonal variants (Session 2)
+basic_operations  Non-singularity check
+lu           LU decomposition with and without pivoting, solve, inverse, determinant (Sessions 2-3)
 tridiagonal  Linear-time LU and solver for tridiagonal matrices (Session 3)
-spd          Gershgorin discs, diagonal dominance, Sylvester's criterion (Session 5)
+spd_checks   Gershgorin discs, diagonal dominance, Sylvester's criterion (Session 5)
+cholesky     Cholesky decomposition, SPD solve / inverse / determinant / test (Session 6)
+eigen        Power method, inverse and Rayleigh quotient iteration, QR, condition number (Session 8)
 """

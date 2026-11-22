@@ -32,15 +32,24 @@ def is_diagonally_dominant(A, strict=True):
 
 
 def is_spd_sylvester(A, tol=1e-12):
-    #Sylvester's criterion: a symmetric matrix is spd iff every leading principal minoris > 0
+    #Sylvester's criterion: a symmetric matrix is spd iff every leading principal minor is > 0
     n = A.shape[0]
+    # A positive diagonal is necessary (it holds the 1x1 minor and every A[i, i] = e_i^T A e_i)
+    for i in range(0, n):
+        if not A[i, i] > 0:
+            return False
+    # Scale-free version: B = D^(-1/2) A D^(-1/2) with D = diag(A), so B has ones on its diagonal.
+    # Each leading minor of B equals that of A divided by A[0,0]...A[k-1,k-1] > 0: same signs, but
+    # O(1) in size, so a fixed tol works whatever the units (daily covariance minors are ~1e-27).
+    d = np.sqrt(np.diag(A).astype(float))
+    B = A / np.outer(d, d)
     # symmetry check (up to tol)
     for i in range(0, n):
         for j in range(i+1, n):
-            if abs(A[i, j] - A[j, i]) > tol:
+            if abs(B[i, j] - B[j, i]) > tol:
                 return False
     # every leading principal minor must be positive
     for k in range(1, n+1):
-        if not det_via_lu(A[:k, :k]) > tol:
+        if not det_via_lu(B[:k, :k]) > tol:
             return False
     return True
