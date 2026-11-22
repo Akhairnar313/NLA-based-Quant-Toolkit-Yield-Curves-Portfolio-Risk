@@ -1,29 +1,12 @@
-"""LU decomposition and its uses (Sessions 2-3)."""
+"""LU decomposition without/with pivoting and other applications"""
 
 import numpy as np
-
-from nla.triangular import forward_substitution, backward_substitution
+from nla.basic_operations import is_nonsingular
 
 
 def lu_no_pivot(A):
-    """LU decomposition without pivoting: A = L U.
-
-    L is unit lower triangular (ones on the diagonal), U is upper triangular.
-    Exists and is unique when all leading principal minors of A are non-zero.
-
-    Operation count: 2n^3/3 + O(n^2).
-
-    Parameters
-    ----------
-    A : (n, n) ndarray
-
-    Returns
-    -------
-    L : (n, n) ndarray, unit lower triangular
-    U : (n, n) ndarray, upper triangular
-    """
     n = A.shape[0]
-    U = A.astype(float)  # work on a copy so the input is not modified
+    U = A.astype(float)
     L = np.eye(n)
     for k in range(0, n-1):
         for i in range(k+1, n):
@@ -35,73 +18,62 @@ def lu_no_pivot(A):
 
 
 def lu_row_pivot(A):
-    """LU decomposition with row pivoting: P A = L U.
-
-    At step i, swap in the row (among rows i..n-1) with the largest |entry|
-    in column i, so every multiplier in L satisfies |L[j, i]| <= 1.
-
-    Parameters
-    ----------
-    A : (n, n) ndarray, non-singular
-
-    Returns
-    -------
-    P : (n, n) ndarray, permutation matrix
-    L : (n, n) ndarray, unit lower triangular, |entries| <= 1
-    U : (n, n) ndarray, upper triangular
-    """
-    raise NotImplementedError("TODO: LU decomposition with row pivoting (Session 3)")
+    n = A.shape[0]
+    U = A.astype(float)
+    L = np.eye(n)
+    P = np.eye(n)
+    for k in range(0, n-1):
+        # pivot: row (among k..n-1) with the largest |entry| in column k
+        p = k + np.argmax(np.abs(U[k:, k]))
+        if p != k:
+            U[[k, p], :] = U[[p, k], :]    # swap rows of U
+            P[[k, p], :] = P[[p, k], :]    # record the swap in P
+            L[[k, p], :k] = L[[p, k], :k]  # swap multipliers already computed
+        for i in range(k+1, n):
+            L[i, k] = U[i, k] / U[k, k]
+            for j in range(k+1, n):
+                U[i, j] -= L[i, k] * U[k, j]
+            U[i, k] = 0.0  # eliminated entry, set exactly to zero
+    return P, L, U
 
 
 def lu_solve(A, b):
-    """Solve A x = b using P A = L U, then L y = P b and U x = y.
-
-    Supports multiple right-hand sides: if b has shape (n, m), solve the m
-    systems A X = B with a single factorization (Session 3). This is
-    where the factorization pays off: 2n^3/3 once, then 2n^2 per system.
-
-    Parameters
-    ----------
-    A : (n, n) ndarray, non-singular
-    b : (n,) or (n, m) ndarray
-
-    Returns
-    -------
-    x : same shape as b
-    """
-    raise NotImplementedError("TODO: linear solve via LU with row pivoting (Sessions 2-3)")
+    n = A.shape[0]
+    if not is_nonsingular(A):
+        raise ValueError("matrix is singular, cannot solve A x = b")
+    P, L, U = lu_row_pivot(A)
+    B = b.reshape(n, -1).astype(float)  # treat a vector as a single column
+    y = P @ B
+    # forward substitution: L y = P b (L has unit diagonal, so no division)
+    for i in range(1, n):
+        for j in range(0, i):
+            y[i, :] -= L[i, j] * y[j, :]
+    # back substitution: U x = y
+    x = y
+    for i in range(n-1, -1, -1):
+        for j in range(i+1, n):
+            x[i, :] -= U[i, j] * x[j, :]
+        x[i, :] /= U[i, i]
+    return x.reshape(b.shape)
 
 
 def inverse_via_lu(A):
-    """Inverse of a non-singular matrix: solve A X = I with lu_solve.
-
-    Returns
-    -------
-    A_inv : (n, n) ndarray
-    """
-    raise NotImplementedError("TODO: matrix inverse via LU (Session 3)")
+    n = A.shape[0]
+    return lu_solve(A, np.eye(n))  # columns of I are the n right-hand sides
 
 
 def det_via_lu(A):
-    """Determinant from P A = L U: det(A) = det(P) * prod(diag(U)).
-
-    det(P) = (-1)^(number of row swaps). det(L) = 1.
-
-    Returns
-    -------
-    det : float
-    """
-    raise NotImplementedError("TODO: determinant via LU (Session 3)")
-
-
-def is_nonsingular(A, tol=1e-12):
-    """Decide whether A is non-singular using the LU algorithm with row pivoting.
-
-    A is singular exactly when the pivoting step finds a column whose
-    candidate pivots are all (numerically) zero, i.e. |pivot| <= tol.
-
-    Returns
-    -------
-    bool
-    """
-    raise NotImplementedError("TODO: identify non-singular matrices using LU (Session 3)")
+    n = A.shape[0]
+    P, L, U = lu_row_pivot(A)
+    # count row swaps: sort the permutation stored in P one swap at a time
+    perm = list(np.argmax(P, axis=1))
+    swaps = 0
+    for i in range(0, n):
+        while perm[i] != i:
+            t = perm[i]
+            perm[i], perm[t] = perm[t], perm[i]
+            swaps += 1
+    det = (-1.0) ** swaps
+    for i in range(0, n):
+        det *= U[i, i]
+    return det
