@@ -4,3 +4,6 @@ __pycache__/
 .pytest_cache/
 .ipynb_checkpoints/
 .streamlit/secrets.toml
+.claude
+docs
+.gitignore
