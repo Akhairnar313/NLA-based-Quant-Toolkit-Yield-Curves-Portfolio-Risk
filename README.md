@@ -1,4 +1,4 @@
-# Numerical Linear Algebra for Financial Applications
+# NLA-based Quant Toolkit: Yield Curves & Portfolio Risk
 
 **Live demo: https://numerical-linear-algebra-financial-applications.streamlit.app/**
 
